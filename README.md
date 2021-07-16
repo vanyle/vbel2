@@ -21,7 +21,7 @@ It's as if the client can simply call function or access variables that exist se
 
 Of course, VBel2 also allows you to also create your own endpoints, if you want to do more than reading or writing data.
 
-You can easily integrate VBel2 into any existing application as you can use as many or as little of VBel2's features as you need. VBel2 acts just as any `express` middleware, so you can just add `app.use(vbel)` to your app and you're ready to go.
+You can easily integrate VBel2 into any existing application as you can use as many or as little of VBel2's features as you need. VBel2 acts just as any `express` middleware, so you can just add `app.use(vbel)` to your app and you're ready to go. You can also use VBel2 without express, just call `vbel(req,res,callback)` and VBel2 will try to handle the request and call `callback` if the request was not meant for VBel2 (in the case of a 404 for example)
 
 ## Using VBel2 to create endpoints
 
