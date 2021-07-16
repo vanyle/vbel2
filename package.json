@@ -1,0 +1,28 @@
+{
+	"name": "vbel2",
+	"version": "0.0.2",
+	"description": "An opiniated back-end framework",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+	},
+	"keywords": [
+		"back-end",
+		"framework",
+		"backend",
+		"web",
+		"app",
+		"api",
+		"vbel"
+	],
+	"author": "vanyle",
+	"license": "SEE LICENSE IN LICENSE.md",
+	"devDependencies": {
+		"jest": "^27.0.3"
+	},
+	"jest":{
+		"transform": {},
+		"testEnvironment": "jest-environment-node"
+	}
+}
