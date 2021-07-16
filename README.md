@@ -103,8 +103,8 @@ let config = {
             return s.all.apply(s,args);
         },
     },
-    // Don't generate documentation in prod
-    doc: false
+    // Don't generate documentation in production !
+    doc: true
 }
 
 let vbel = new VBel(config);
@@ -228,5 +228,11 @@ You can use these handler in conjunction with the other endpoints.
 Because VBel2 is aware of all the endpoints you create, their types and the database scheme,
 VBel2 can provide you with all the documentation you need about all the endpoints.
 
-Just do `new VBel({doc:true})` when creating the VBel object and go to `/doc.html` to access the documentation page.
+Just do `new VBel({doc:true})` when creating the VBel object and go to `/doc` to access the documentation page.
 This page will list all the endpoints available, their arguments, the permission required to use them and more !
+
+You can also access the documentation and share it with the `doc.html` file created. 
+
+## Tests
+
+VBel uses jest for testing. You can find the tests inside test.js.

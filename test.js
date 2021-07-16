@@ -17,7 +17,7 @@ let VBel = require('./index.js'); // import VBel.
 let http = require('http');
 // let jest = require('@jest/globals');
 
-// Let's define some function needed for testing
+// Let's define some functions needed for testing
 // Mainly, to make HTTP request to our VBel2 backend.
 /*
 Does an HTTP GET request and returns

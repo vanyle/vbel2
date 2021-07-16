@@ -3,9 +3,8 @@
 	"version": "0.0.2",
 	"description": "An opiniated back-end framework",
 	"main": "index.js",
-	"type": "module",
 	"scripts": {
-		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+		"test": "node node_modules/jest/bin/jest.js"
 	},
 	"keywords": [
 		"back-end",
