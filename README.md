@@ -1,14 +1,48 @@
 # VBel2
 
-VBel2 helps you quickly build complex APIs that easily integrate with your frontend.
+VBel2 helps you quickly build complex APIs that easily integrate with your frontend / existing backend.
+Think of it as Django but in Javascript, more lightweight and API focused.
 
-## Installation
+## Getting Started
 
-`npm install vbel2`
+Use the following command
+
+```bash
+npm install vbel2
+```
+
+Minimal example:
+
+```js
+const VBel = require('vbel2');
+const http = require('http');
+
+let vbel = new VBel();
+
+// Define endpoints
+
+vbel.endpoint("hello", {name:{"type":"string"}}, (obj,req,res) => {
+    vbel.sendSuccess(`Hello ${obj.name}`);
+});
+vbel.endpoint("bye", {name:{"type":"string"}}, (obj,req,res) => {
+    vbel.sendSuccess(`Goodbye ${obj.name}`);
+});
+
+
+vbel.compile(); // call compile before use
+
+let server = http.createServer({},vbel);
+
+server.listen(8080,() => {
+    console.log("http://localhost:8080")
+});
+
+```
+
 
 ## Overview
 
-VBel2 stands for Vanyle's BackEnd Library 2. It is a framework to build backends in NodeJS. VBel2 allows you to quickly build complex websites with minimal effort for your backend. 
+VBel2 stands for Vanyle's BackEnd Library 2. It is a framework to build backends in Node.js. VBel2 allows you to quickly build complex websites with minimal effort for your backend. 
 
 Most website are just an interface between a user and a database. The only job of the backend is to make sure that the users have proper authorizations to read or edit the database. It's from this observation that VBel2 was built.
 
@@ -29,7 +63,7 @@ You can easily integrate VBel2 into any existing application as you can use as m
 
 ## Using VBel2 to create endpoints
 
-Let's say you have a nodejs application built with express and you want to add a new endpoint.
+Let's say you have a node.js application built with express and you want to add a new endpoint.
 For example, an endpoint that returns a random number from the server. 
 
 You could write something like this:
@@ -49,7 +83,7 @@ vbel.endpoint(
         // behavior of the endpoint
         // VBel does all the typechecking for you.
         let nbr = Math.random() * (obj.max - obj.min) + obj.min;
-        vbel.sendResult(res,nbr);
+        vbel.sendSuccess(res,nbr);
     }
 );
 
