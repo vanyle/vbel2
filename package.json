@@ -6,6 +6,7 @@
 	"scripts": {
 		"test": "node node_modules/jest/bin/jest.js"
 	},
+	"repository": "vanyle/vbel2",
 	"keywords": [
 		"back-end",
 		"framework",
@@ -15,6 +16,9 @@
 		"api",
 		"vbel"
 	],
+	"engines": {
+    	"node": ">= 0.10.0"
+  	},
 	"author": "vanyle",
 	"license": "MIT",
 	"devDependencies": {
