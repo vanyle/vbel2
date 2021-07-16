@@ -2,6 +2,10 @@
 
 VBel2 helps you quickly build complex APIs that easily integrate with your frontend.
 
+## Installation
+
+`npm install vbel2`
+
 ## Overview
 
 VBel2 stands for Vanyle's BackEnd Library 2. It is a framework to build backends in NodeJS. VBel2 allows you to quickly build complex websites with minimal effort for your backend. 
