@@ -180,7 +180,7 @@ about the objects in the table more convenient. You can also use `joinOnDefault`
 you want to fetch are in another table.
 
 ```js
-vw.table("post",{
+vbel.table("post",{
     defaultSelector:"post.id,title,user.name AS author,date,SUBSTR(content,0,80) AS preview",
     joinOnDefault:"JOIN user ON user.id = author_id", // Used to also fetch the name of the author.
     // Some fields ...
