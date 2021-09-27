@@ -15,12 +15,10 @@ Minimal example:
 
 ```js
 const VBel = require('vbel2');
-const http = require('http');
 
 let vbel = new VBel();
 
 // Define endpoints
-
 vbel.endpoint("hello", {name:{"type":"string"}}, (obj,req,res) => {
     vbel.sendSuccess(`Hello ${obj.name}`);
 });
@@ -29,16 +27,24 @@ vbel.endpoint("bye", {name:{"type":"string"}}, (obj,req,res) => {
 });
 
 
-vbel.compile(); // call compile before use
-
-let server = http.createServer({},vbel);
-
-server.listen(8080,() => {
+vbel.listen(8080,() => {
     console.log("http://localhost:8080")
 });
-
 ```
 
+You can also use VBel just to serve static files or folders:
+
+```js
+const VBel = require('vbel2');
+
+let vbel = new VBel();
+vbel.file("/","file.html"); // serve a static file
+vbel.file("/static","static/"); // serve all the files inside this directory
+
+vbel.listen(8080,() => {
+    console.log("http://localhost:8080")
+});
+```
 
 ## Overview
 

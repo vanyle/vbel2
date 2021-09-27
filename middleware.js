@@ -1,5 +1,7 @@
+"use strict";
 const url = require('url'); 
-
+const fs = require("fs");
+const path = require("path");
 
 function sendError(res,description,code,fatal){
 	if(typeof description !== "string"){
@@ -30,7 +32,94 @@ module.exports = (vbel,req,res,next) => {
 		res.end();
 		return;
 	}
-	if(query_path == "/doc" && vbel.doc){ // provide debug documentation
+
+	for(let paths in vbel.files){
+		if(query_path.startsWith(paths)){
+			let striped_query = query_path.substring(paths.length);
+			let f_path = vbel.files[paths].filename;
+
+			let file_path = f_path + '/' + path.normalize(striped_query);
+			// remove ../.. from file_path.
+			while(file_path.endsWith('/')){
+				file_path = file_path.substring(0,file_path.length-1);
+			}
+			file_path = path.normalize(file_path);
+
+			if(!fs.existsSync(file_path)){
+				continue;
+			}
+
+			let file_info = null;
+			try{
+				file_info = fs.lstatSync(file_path);
+			}catch(err){
+				continue;
+			}
+			if(file_info.isFile()){
+				let range = req.headers.range;
+				let content_type = "application/octet-stream";
+
+				// we provide content type for common file types.
+				if(file_path.endsWith('.css')){
+					content_type = "text/css";
+				}else if(file_path.endsWith('.html')){
+					content_type = "text/html";
+				}else if(file_path.endsWith('.js')){
+					content_type = "application/javascript";
+				}else if(file_path.endsWith('.png')){
+					content_type = "image/png";
+				}else if(file_path.endsWith('.jpg')){
+					content_type = "image/jpg";
+				}else if(file_path.endsWith('.txt')){
+					content_type = "text/plain";
+				}
+
+				if(!range){
+					res.writeHead(200, {
+						"Content-Type": content_type
+					});
+					// stream file output to res.
+					let stream = fs.createReadStream(file_path);
+					stream.on('data',(chunk) =>{
+						res.write(chunk);
+					});
+					stream.on('end',() => {
+						res.end();
+					});
+					return;
+				}else{
+					// needed to serve large files.
+					let stats = fs.statSync(fpath);
+					let positions = range.replace(/bytes=/, "").split("-");
+					let start = parseInt(positions[0], 10);
+					let total = stats.size;
+					let end = positions[1] ? parseInt(positions[1], 10) : total - 1;
+					let chunksize = (end - start) + 1;
+					res.writeHead(206, {
+						"Content-Range": "bytes " + start + "-" + end + "/" + total,
+						"Accept-Ranges": "bytes",
+						"Content-Length": chunksize,
+						"Content-Type": content_type
+					});
+					let stream = fs.createReadStream(fpath, { start: start, end: end })
+					.on("open", function() {
+						stream.pipe(res);
+					}).on("error", function(err) {
+						res.end(err);
+					});
+				}
+
+			}else{
+				// not a file, probably a directory.
+				// we don't provide a directory view.
+				continue;
+			}
+
+		}
+	}
+
+
+	if(query_path === "/doc" && vbel.doc){ // provide debug documentation
 		res.write(vbel.debug_template);
 		res.end();
 		return;

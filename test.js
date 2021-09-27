@@ -66,7 +66,8 @@ function makeTestServer(vbel,callback){
 
 test('provides documentation when requested.', (done) => {
 	let config = {
-		doc:true
+		doc:true,
+		sql:null
 	};
 
 	let vbel = new VBel(config);
@@ -82,7 +83,8 @@ test('provides documentation when requested.', (done) => {
 });
 test('provides javascript to access endpoints at the url specified.', (done) => {
 	let config = {
-		client_script:	"/the/endpoint_script.js" // "/client.js" by default
+		client_script:"/the/endpoint_script.js", // "/client.js" by default
+		sql:null
 	};
 
 	let vbel = new VBel(config);
@@ -101,7 +103,8 @@ test('provides javascript to access endpoints at the url specified.', (done) => 
 
 test('generate the endpoints requested and executes them', (done) => {
 	let config = {
-		url: "query" // "q" by default
+		url: "query", // "q" by default
+		sql:null
 	}
 	let vbel = new VBel(config);
 	
@@ -133,7 +136,7 @@ test('generate the endpoints requested and executes them', (done) => {
 });
 
 test('perform proper type checking of endpoint arguments', (done) => {
-	let vbel = new VBel({});
+	let vbel = new VBel({sql:null});
 	
 	let notANumber = "Hello";
 	

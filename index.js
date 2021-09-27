@@ -1,10 +1,12 @@
 
 // vanyle backend library
+"use strict";
 
 const docgen = require("./lib/docgen.js");
 const jsgen = require("./lib/jsgen.js");
 const middleware = require("./middleware.js");
-const fs = require('fs');
+const fs = require("fs");
+const http = require("http");
 
 // TODO: put the three following functions in a separate file
 function consoleError(msg){
@@ -51,6 +53,9 @@ class VBel extends Function{
 		self.table_info = {};
 		self.sql_table = null; // generated from table_info inside compile()
 
+		self.files = {};
+		self.folders = {};
+
 		self.appname = config.appname;
 		self.url = config.url || "q";
 		self.client_script = config.client_script || "/client.js";
@@ -61,7 +66,17 @@ class VBel extends Function{
 
 		self.sql = config.sql;
 		if(self.sql === undefined){
-			// use sqlite3 as default db.
+			console.error(`config.sql is not defined.
+Tou need to provide sql functions to use the SQL related features of VBel2.
+
+To disable this warning, add this:
+sql:{
+	_run: (statement,...args) => {},
+	_get_all: (statement,...args) => {}
+}
+to your config or at least:
+sql:null`);
+			
 		}
 
 
@@ -305,10 +320,11 @@ class VBel extends Function{
 	}
 
 	// Used to serve static files. Option for compilation purposes (templating, caching, etc ...)
+	// Options is currently not implemented.
 	// Note that if filename refers to a directory, this will provide the entire directory.
 	file(href,filename,options){
-		this.compiled = false;
-	}
+		this.files[href] = {filename,options};
+ 	}
 
 	// Used to call endpoints without any HTTP request.
 	// In this case, the res and req object are simulated.
@@ -1078,7 +1094,10 @@ class VBel extends Function{
 		});
 		res.end();
 	}
-
+	listen(){
+		let server = http.createServer(this);
+		return server.listen.apply(server, arguments);
+	}
 }
 
 module.exports = VBel;
