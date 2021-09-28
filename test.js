@@ -27,10 +27,15 @@ Does an HTTP GET request and returns
 		body: ...
 	}
 */
-async function fetch(url){
+async function fetch(url,cookie){
 	return new Promise((resolve,reject) => {
 		try{
-			http.get(url, (res) => {
+			let headers = {};
+			if(cookie){
+				headers["Cookie"] = cookie;
+			}
+
+			http.get(url,{headers},(res) => {
 				let rawData = "";
 				res.setEncoding('utf8');
 				res.on('data', (chunk) => { rawData += chunk; });
@@ -249,4 +254,101 @@ test('creates SQL tables according to a given model', () => {
 	expect(run_statements[1]).toEqual(expect.stringContaining("author_id INTEGER")); // foreign key was created properly.
 	expect(run_statements[1]).toEqual(expect.stringContaining("FOREIGN KEY (author_id) REFERENCES user (id)"));
 
+});
+
+test("stores client data is session object.", (done) => {
+	let vbel = new VBel({sql:null,cookie_secret:"secret"});
+
+	// VBel has a session middleware implementation built-in.
+	// By default, VBel uses a memory store.
+	// You can hook a custom memory store with:
+	/*
+	new VBel({
+		sql: null,
+		store:{
+			read(session_id){
+				// Should return req.session (an object) corresponding to the id given.
+				// Return undefined if the id does not exist.
+			}
+			write(session_id,data){
+				// Should store data (== req.session) for future use in the store.
+				// Should create a new session profile if it does not exist.
+				// Should override existing data if the profile already exists.
+				// If data == {}, you are allowed to delete the entry to save disk space
+			}
+		}
+	})
+
+	*/
+	vbel.endpoint("counter",{},async (obj,req,res) => {
+		if(typeof req.session.counter !== "number"){
+			req.session.counter = 0;
+		}else{
+			req.session.counter++;			
+		}
+		vbel.sendSuccess(res,"ok"+req.session.counter);
+	});
+
+	let currentPort = ++port;
+
+	let server = vbel.listen(currentPort, async () => {
+
+		let result,responseObject;
+		// make sure all 3 requests result in an error.
+		result = await fetch(`http://localhost:${currentPort}/q/counter`);
+		responseObject = JSON.parse(result.body);
+		let cookie = result.headers["set-cookie"][0];
+		// console.log(cookie);
+
+		expect(responseObject.error).toBeUndefined();
+		expect(responseObject.result).toBe("ok0");
+
+		result = await fetch(`http://localhost:${port}/q/counter`,cookie);
+		responseObject = JSON.parse(result.body);
+		expect(responseObject.error).toBeUndefined();
+		expect(responseObject.result).toBe("ok1"); // counter has increased: session works.
+
+		server.close();
+		done();
+	});
+});
+
+test("supports custom session stores", (done) => {
+	// Test setup
+	let currentPort = ++port;
+	const reader = jest.fn();
+
+	// VBel code
+	let vbel = new VBel({
+		sql: null,
+		cookie_secret:"secret",
+		store:{
+			read(session_id){
+				// See the test above for more detail on how to implement read and write
+				reader(); // mock function
+			},
+			write(session_id,data){
+				expect(data.data).toStrictEqual({counter:1});
+			}
+		}
+	});
+	vbel.endpoint("counter",{},async (obj,req,res) => {
+		req.session.counter = 1;
+		vbel.sendSuccess(res,"ok");
+	});
+
+
+	let server = vbel.listen(currentPort, async () => {
+		let result = await fetch(`http://localhost:${currentPort}/q/counter`);
+		// call to write to store the counter.
+		let cookie = result.headers["set-cookie"][0];
+		expect(reader).not.toHaveBeenCalled();
+
+		await fetch(`http://localhost:${currentPort}/q/counter`,cookie);
+		// call to read to fetch the counter value.
+		expect(reader).toHaveBeenCalled();
+
+		server.close();
+		done();
+	});
 });

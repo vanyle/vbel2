@@ -3,6 +3,9 @@
 VBel2 helps you quickly build complex APIs that easily integrate with your frontend / existing backend.
 Think of it as Django but in Javascript, more lightweight and API focused.
 
+VBel has no dependencies, you just install it and get started !
+For more complex use, an SQL database is recommended.
+
 ## Getting Started
 
 Use the following command
@@ -116,6 +119,73 @@ And on the client size, you can have:
 </html>
 ```
 
+## VBel sessions
+
+Just like `express-session`, VBel provides sessions by default. They work just like `express` sessions:
+
+```js
+let vbel = new VBel({
+    sql:null,
+    // This secret is used to make cookies read only.
+    cookie_secret:"secret"
+});
+
+vbel.endpoint("counter",{},async (obj,req,res) => {
+    if(typeof req.session.counter !== "number"){
+        req.session.counter = 0;
+    }else{
+        req.session.counter++;          
+    }
+    vbel.sendSuccess(res,req.session.counter);
+});
+// counter available at: http://localhost:8080/q/counter by default.
+// change this path with the url option
+
+
+vbel.listen(8080);
+
+```
+
+By default, a memory store is used. This store is not production ready and a database should be used instead. To do this, just provide 2 functions to VBel:
+
+```js
+
+const sqlite3 = require('better-sqlite3');
+let db = sqlite3("./mydb.db",{});
+
+// In this example, we assume that mydb.db contains a "sessions" table with:
+// id: primary key, TEXT
+// content: primary key, TEXT
+
+let vbel = new VBel({
+    sql:null,
+    // This secret is used to make cookies read only.
+    cookie_secret:"secret",
+    store:{
+        read:(sessionid) => {
+            let s = db.prepare("SELECT content FROM sessions WHERE id = ?");
+            let res = s.get(sessionid);
+            if(res === null) return;
+            return JSON.parse(res);
+        },
+        write:(sessionid,data) => {
+            let olddata = read(sessionid);
+            if(typeof olddata === "undefined" && Object.keys(data).length !== 0){
+                let s = db.prepare("INSERT INTO sessions (id,content) VALUES (?,?)");
+                s.run(sessionid,JSON.stringify(data));
+            }else if(Object.keys(data).length !== 0){
+                let s = db.prepare("UPDATE sessions SET content = ? WHERE id = ?");
+                s.run(JSON.stringify(data),sessionid);
+            }else{
+                let s = db.prepare("DELETE FROM sessions WHERE id = ?");
+                s.run(sessionid);
+            }
+        }
+    }
+});
+
+```
+You can reuse the code above for your database.
 
 ## Using VBel2 to manage SQL tables
 

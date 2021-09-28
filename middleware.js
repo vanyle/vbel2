@@ -2,6 +2,30 @@
 const url = require('url'); 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const session_cookie_name = 'session_id';
+
+let session_memory_store = {
+
+};
+
+
+function make_salt(){
+	const buf = crypto.randomBytes(32);
+	return buf.toString('hex');
+}
+function sha256(msg){
+	return crypto.createHash('sha256').update(msg, 'utf8').digest().toString('hex');
+}
+function make_signable(s,secret){
+	return s+"."+sha256(s+"."+secret);
+}
+function validate(s,secret){
+	// for all x, validate(sign(x)) === true
+	// for all y, if there is not x such that sign(x) = y, then, validate(y) === false
+	let d = s.split(".");
+	return d[1] === sha256(d[0]+"."+secret);
+}
 
 function sendError(res,description,code,fatal){
 	if(typeof description !== "string"){
@@ -18,6 +42,30 @@ function sendError(res,description,code,fatal){
 	}
 }
 
+function parseCookies(request) {
+	let list = {}, rc = request.headers.cookie;
+
+	rc && rc.split(';').forEach((cookie) => {
+		let parts = cookie.split('=',2);
+		list[parts[0].trim()] = decodeURI(parts[1]);
+	});
+
+	return list;
+}
+function setCookie(res,key,val){
+	res.writeHead(200,{
+		'Set-Cookie': key+'='+val,
+	});
+}
+
+function readSessionStore(session_id){
+	return session_memory_store[session_id];
+}
+function writeSessionStore(session_id,data){
+	session_memory_store[session_id] = data;
+}
+
+
 
 module.exports = (vbel,req,res,next) => {
 	// handle api request.
@@ -26,6 +74,61 @@ module.exports = (vbel,req,res,next) => {
 	let query_path = url_parts.pathname;
 	let get_arguments = url_parts.query;
 	let host = req.connection.remoteAddress;
+
+
+	let readStore = readSessionStore;
+	let writeStore = writeSessionStore;
+	if(vbel.store && typeof vbel.store.read === "function"){
+		readStore = vbel.store.read;
+	} 
+	if(vbel.store && typeof vbel.store.write === "function"){
+		writeStore = vbel.store.write;
+	}
+
+	// session implementation
+	if(typeof req.session === "undefined"){ // if a session implementation is not given.
+		let cookies = parseCookies(req);
+		req.cookies = cookies;
+		let cookieHeaderValue = null;
+		let session_id = null;
+		let session_data = null;
+
+		let isValid = typeof req.cookies[session_cookie_name] === "string"
+		if(isValid){
+			session_id = cookies[session_cookie_name];
+			isValid = validate(session_id,vbel.cookie_secret);
+		}
+		// fetch session data associated with the cookie.
+		if(isValid){
+			session_data = readStore(session_id);
+			if(typeof session_data === "object"){
+				req.session = session_data.data;
+				session_data.lastUsed = new Date();
+			}else{
+				session_data = {
+					data:{},
+					lastUsed: new Date()
+				};
+				req.session = session_data.data;
+			}
+		// set a new cookie and create an update session object.
+		}else{
+			session_id = make_signable(make_salt(),vbel.cookie_secret);
+			session_data = {
+				data:{},
+				lastUsed: new Date()
+			};
+			req.session = session_data.data;
+			res.setHeader("Set-Cookie",session_cookie_name+"="+session_id)
+		}
+
+		res.on("close", () => {
+			// write session back to store (only if not trivial), this saves space in the store.
+			if(session_data && Object.keys(session_data).length !== 0){
+				writeStore(session_id,session_data);
+			}
+		});
+	}
 
 	if(query_path === vbel.client_script){ // provide endpoint script
 		res.write(vbel.js_interface_string);
@@ -75,9 +178,8 @@ module.exports = (vbel,req,res,next) => {
 				}
 
 				if(!range){
-					res.writeHead(200, {
-						"Content-Type": content_type
-					});
+					res.setHeader("Content-Type",content_type);
+
 					// stream file output to res.
 					let stream = fs.createReadStream(file_path);
 					stream.on('data',(chunk) =>{
@@ -95,12 +197,13 @@ module.exports = (vbel,req,res,next) => {
 					let total = stats.size;
 					let end = positions[1] ? parseInt(positions[1], 10) : total - 1;
 					let chunksize = (end - start) + 1;
-					res.writeHead(206, {
-						"Content-Range": "bytes " + start + "-" + end + "/" + total,
-						"Accept-Ranges": "bytes",
-						"Content-Length": chunksize,
-						"Content-Type": content_type
-					});
+
+					res.setHeader("Content-Range","bytes "+start+"-"+end+"/"+total);
+					res.setHeader("Accept-Ranges","bytes");
+					res.setHeader("Content-Length",chunksize);
+					res.setHeader("Content-Type",content_type);
+					res.statusCode = 206;
+
 					let stream = fs.createReadStream(fpath, { start: start, end: end })
 					.on("open", function() {
 						stream.pipe(res);
@@ -117,7 +220,6 @@ module.exports = (vbel,req,res,next) => {
 
 		}
 	}
-
 
 	if(query_path === "/doc" && vbel.doc){ // provide debug documentation
 		res.write(vbel.debug_template);

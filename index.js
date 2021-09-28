@@ -53,6 +53,10 @@ class VBel extends Function{
 		self.table_info = {};
 		self.sql_table = null; // generated from table_info inside compile()
 
+		// does not matter if not changed. It's used to sign cookies. Having read-only cookies is not that important.
+		self.cookie_secret = config.cookie_secret || "keyboard cat";
+		self.store = config.store || undefined;
+
 		self.files = {};
 		self.folders = {};
 
@@ -1096,7 +1100,8 @@ sql:null`);
 	}
 	listen(){
 		let server = http.createServer(this);
-		return server.listen.apply(server, arguments);
+		server.listen.apply(server, arguments);
+		return server;
 	}
 }
 
