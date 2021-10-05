@@ -23,10 +23,10 @@ let vbel = new VBel();
 
 // Define endpoints
 vbel.endpoint("hello", {name:{"type":"string"}}, (obj,req,res) => {
-    vbel.sendSuccess(`Hello ${obj.name}`);
+    vbel.sendSuccess(res,`Hello ${obj.name}`);
 });
 vbel.endpoint("bye", {name:{"type":"string"}}, (obj,req,res) => {
-    vbel.sendSuccess(`Goodbye ${obj.name}`);
+    vbel.sendSuccess(res,`Goodbye ${obj.name}`);
 });
 
 
